@@ -24,6 +24,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<ResultadoAuth>;
   signUp: (
     email: string,
@@ -39,6 +40,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const ADMIN_EMAIL = 'Earm2771@gmail.com';
+
+  const isAdmin = !!user && user.email === ADMIN_EMAIL;
 
   useEffect(() => {
     // Obtener sesión inicial
@@ -93,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         session,
         loading,
+        isAdmin,
         signIn,
         signUp,
         signOut,
