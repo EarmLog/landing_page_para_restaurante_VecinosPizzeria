@@ -2,7 +2,6 @@
   "appId": "com.vecinos.pizzeria",
   "appName": "vecinos-pizzeria",
   "webDir": "out",
-  "bundledWebRuntime": false,
   "server": {
     "androidScheme": "https"
   },
