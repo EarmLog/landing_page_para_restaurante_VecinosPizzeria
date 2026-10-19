@@ -1,108 +1,154 @@
 /**
  * Login / Registro de Vecinos Club (Supabase Auth)
+ * Valida y sanitiza las entradas antes de enviarlas a Supabase.
  */
 
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+import CampoTexto from '@/components/ui/CampoTexto';
+import Boton from '@/components/ui/Boton';
+import { esCorreoValido, esTelefonoValido, sanitizarTexto } from '@/lib/utils';
 
 export default function LoginPage() {
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [nombre, setNombre] = useState('');
-  const [telefono, setTelefono] = useState('');
+  const router = useRouter();
+  const { signIn, signUp } = useAuth();
+  const [esLogin, setEsLogin] = useState(true);
+  const [enviando, setEnviando] = useState(false);
+  const [formulario, setFormulario] = useState({
+    nombre: '',
+    telefono: '',
+    correo: '',
+    contrasena: '',
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Formulario enviado:', { email, password, nombre, telefono });
-    // TODO: Integrar con Supabase Auth
+  const actualizar = (campo: string, valor: string) => {
+    setFormulario((actual) => ({ ...actual, [campo]: valor }));
+  };
+
+  const validar = (): string | null => {
+    if (!esCorreoValido(formulario.correo)) {
+      return 'Escribe un correo electrónico válido';
+    }
+    if (formulario.contrasena.length < 6) {
+      return 'La contraseña debe tener al menos 6 caracteres';
+    }
+    if (!esLogin) {
+      if (formulario.nombre.trim().length < 3) {
+        return 'Escribe tu nombre completo';
+      }
+      if (!esTelefonoValido(formulario.telefono)) {
+        return 'Escribe un teléfono de 10 dígitos';
+      }
+    }
+    return null;
+  };
+
+  const enviar = async (evento: React.FormEvent) => {
+    evento.preventDefault();
+    const errorValidacion = validar();
+    if (errorValidacion) {
+      toast.error(errorValidacion);
+      return;
+    }
+
+    setEnviando(true);
+    try {
+      if (esLogin) {
+        const { error } = await signIn(formulario.correo.trim(), formulario.contrasena);
+        if (error) throw error;
+        toast.success('¡Bienvenido de vuelta a Vecinos Club!');
+        router.push('/dashboard/club');
+      } else {
+        const { error } = await signUp(
+          formulario.correo.trim(),
+          formulario.contrasena,
+          {
+            nombre: sanitizarTexto(formulario.nombre),
+            telefono: sanitizarTexto(formulario.telefono),
+            puntos: 100,
+          }
+        );
+        if (error) throw error;
+        toast.success('¡Listo! Ya eres parte de Vecinos Club');
+        router.push('/dashboard/club');
+      }
+    } catch (error) {
+      const mensaje =
+        error instanceof Error ? error.message : 'Ocurrió un error inesperado';
+      toast.error(`No pudimos completar la operación: ${mensaje}`);
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-vecinos-crema to-orange-100 pt-20 md:pt-32 pb-20 px-4">
       <div className="max-w-md mx-auto">
-        <div className="bg-white rounded-3xl shadow-vecinos p-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-vecinos-texto text-center mb-6">
-            {isLogin ? 'Iniciar Sesión' : 'Unirse al Vecinos Club'}
+        <div className="bg-white rounded-3xl shadow-vecinos p-6 md:p-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-vecinos-texto mb-6 text-center">
+            {esLogin ? 'Iniciar Sesión' : 'Únete a Vecinos Club'}
           </h1>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
+          <form onSubmit={enviar} className="space-y-4">
+            {!esLogin && (
               <>
-                <div>
-                  <label className="block text-sm font-medium text-vecinos-texto mb-1">
-                    Nombre Completo
-                  </label>
-                  <input
-                    type="text"
-                    value={nombre}
-                    onChange={(e) => setNombre(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-orange-200 focus:outline-none focus:ring-2 focus:ring-vecinos-naranja"
-                    placeholder="Ej: Juan Pérez"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-vecinos-texto mb-1">
-                    Teléfono
-                  </label>
-                  <input
-                    type="tel"
-                    value={telefono}
-                    onChange={(e) => setTelefono(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-orange-200 focus:outline-none focus:ring-2 focus:ring-vecinos-naranja"
-                    placeholder="Ej: 55 1234 5678"
-                    required
-                  />
-                </div>
+                <CampoTexto
+                  etiqueta="Nombre Completo"
+                  name="nombre"
+                  value={formulario.nombre}
+                  onChange={(e) => actualizar('nombre', e.target.value)}
+                  placeholder="Ej: Juan Pérez"
+                  autoComplete="name"
+                />
+                <CampoTexto
+                  etiqueta="Teléfono"
+                  name="telefono"
+                  type="tel"
+                  value={formulario.telefono}
+                  onChange={(e) => actualizar('telefono', e.target.value)}
+                  placeholder="Ej: 5512345678"
+                  autoComplete="tel"
+                />
               </>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-vecinos-texto mb-1">
-                Correo Electrónico
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-orange-200 focus:outline-none focus:ring-2 focus:ring-vecinos-naranja"
-                placeholder="tu@email.com"
-                required
-              />
-            </div>
+            <CampoTexto
+              etiqueta="Correo Electrónico"
+              name="correo"
+              type="email"
+              value={formulario.correo}
+              onChange={(e) => actualizar('correo', e.target.value)}
+              placeholder="tu@email.com"
+              autoComplete="email"
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-vecinos-texto mb-1">
-                Contraseña
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-orange-200 focus:outline-none focus:ring-2 focus:ring-vecinos-naranja"
-                placeholder="Mínimo 6 caracteres"
-                required
-              />
-            </div>
+            <CampoTexto
+              etiqueta="Contraseña"
+              name="contrasena"
+              type="password"
+              value={formulario.contrasena}
+              onChange={(e) => actualizar('contrasena', e.target.value)}
+              placeholder="Mínimo 6 caracteres"
+              autoComplete={esLogin ? 'current-password' : 'new-password'}
+            />
 
-            <button
-              type="submit"
-              className="w-full bg-vecinos-naranja text-white py-3 rounded-xl font-semibold hover:bg-orange-600 transition-colors"
-            >
-              {isLogin ? 'Iniciar Sesión' : 'Registrarme'}
-            </button>
+            <Boton type="submit" anchoCompleto disabled={enviando}>
+              {enviando ? 'Procesando...' : esLogin ? 'Iniciar Sesión' : 'Registrarme'}
+            </Boton>
           </form>
 
           <div className="mt-6 text-center">
             <button
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => setEsLogin(!esLogin)}
               className="text-vecinos-naranja font-semibold hover:underline"
             >
-              {isLogin
-                ? '¿No tienes cuenta? Únete al Vecinos Club'
-                : '¿Ya tienes cuenta? Iniciar Sesión'}
+              {esLogin
+                ? '¿No tienes cuenta? Únete a Vecinos Club'
+                : '¿Ya tienes cuenta? Inicia sesión'}
             </button>
           </div>
 
@@ -111,10 +157,10 @@ export default function LoginPage() {
               Beneficios del Vecinos Club
             </h3>
             <ul className="text-sm text-vecinos-texto-claro space-y-1">
-              <li>✓ Acumula puntos por cada compra</li>
-              <li>✓ Pases de pizza gratis</li>
-              <li>✓ Promociones exclusivas</li>
-              <li>✓ Notificaciones de ofertas</li>
+              <li>Acumula puntos por cada compra</li>
+              <li>Pases de pizza gratis</li>
+              <li>Promociones exclusivas</li>
+              <li>Notificaciones de ofertas</li>
             </ul>
           </div>
         </div>

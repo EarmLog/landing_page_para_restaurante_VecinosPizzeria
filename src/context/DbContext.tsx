@@ -6,12 +6,12 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { dbAdapter } from '@/lib/db/dbAdapter';
+import { dbAdapter, EstadoDB } from '@/lib/db/dbAdapter';
 
 interface DbContextType {
   db: typeof dbAdapter;
   isReady: boolean;
-  estadoDB: any;
+  estadoDB: EstadoDB;
   refrescarEstado: () => Promise<void>;
 }
 
@@ -19,7 +19,10 @@ const DbContext = createContext<DbContextType | undefined>(undefined);
 
 export function DbProvider({ children }: { children: React.ReactNode }) {
   const [isReady, setIsReady] = useState(false);
-  const [estadoDB, setEstadoDB] = useState<any>({ conectado: false, cantidadRegistros: {} });
+  const [estadoDB, setEstadoDB] = useState<EstadoDB>({
+    conectado: false,
+    cantidadRegistros: {},
+  });
 
   const refrescarEstado = async () => {
     try {

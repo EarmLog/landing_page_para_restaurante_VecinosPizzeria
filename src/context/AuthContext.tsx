@@ -6,15 +6,30 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabaseClient';
+
+export interface DatosVecino {
+  nombre?: string;
+  telefono?: string;
+  puntos?: number;
+}
+
+export interface ResultadoAuth {
+  data: { user: User | null; session: Session | null };
+  error: AuthError | null;
+}
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<any>;
-  signUp: (email: string, password: string, userData?: any) => Promise<any>;
+  signIn: (email: string, password: string) => Promise<ResultadoAuth>;
+  signUp: (
+    email: string,
+    password: string,
+    userData?: DatosVecino
+  ) => Promise<ResultadoAuth>;
   signOut: () => Promise<void>;
 }
 
@@ -53,7 +68,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { data, error };
   };
 
-  const signUp = async (email: string, password: string, userData?: any) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    userData?: DatosVecino
+  ) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,

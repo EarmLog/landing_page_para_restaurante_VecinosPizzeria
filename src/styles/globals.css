@@ -13,11 +13,8 @@
   --foreground: #1F2937;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #1F2937;
-    --foreground: #FFFBEB;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -28,4 +25,16 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Animación de aparición para modales */
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

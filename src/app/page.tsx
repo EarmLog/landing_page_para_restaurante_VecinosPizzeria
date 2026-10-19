@@ -11,7 +11,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto text-center">
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-vecinos-texto mb-6 leading-tight">
             Bienvenido a{' '}
-            <span className="text-vecinos-naranja">Vecino's</span>{' '}
+            <span className="text-vecinos-naranja">Vecinos</span>{' '}
             <span className="text-vecinos-rojo">Pizzería</span>
           </h1>
           <p className="text-xl md:text-2xl text-vecinos-texto-claro mb-8 max-w-2xl mx-auto">

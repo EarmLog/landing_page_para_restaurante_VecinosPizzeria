@@ -8,11 +8,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navItems = [
     { href: '/', label: 'Inicio', icon: '🏠' },
@@ -28,7 +26,7 @@ export default function Navbar() {
       <nav className="hidden md:block fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
         <div className="bg-white/95 backdrop-blur-md rounded-full shadow-vecinos px-6 py-3 flex items-center gap-8 border border-orange-200">
           <Link href="/" className="font-bold text-xl text-vecinos-naranja">
-            Vecino's Pizzería
+            Vecinos Pizzería
           </Link>
           <div className="flex gap-6">
             <Link 
