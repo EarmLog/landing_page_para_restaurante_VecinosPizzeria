@@ -41,7 +41,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'Vecino\'s Pizzería v${{ github.ref_name }}'
+          releaseName: "Vecino's Pizzería v${{ github.ref_name }}"
           releaseBody: 'Release de la aplicación de escritorio portable'
           releaseDraft: false
           prerelease: false
