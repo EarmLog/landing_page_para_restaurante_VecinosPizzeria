@@ -32,9 +32,23 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
+
+# tauri
+/src-tauri/target/
+/src-tauri/gen/
+
+# capacitor / android
+/android/app/build/
+/android/build/
+/android/.gradle/
+/android/local.properties
+/android/app/release/
+/ios/App/Pods/
+/ios/App/build/
 
 # typescript
 *.tsbuildinfo
