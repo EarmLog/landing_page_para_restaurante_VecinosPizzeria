@@ -9,6 +9,37 @@
 import { Platform, getPlatform } from '@/lib/platformDetector';
 import { dexieDB } from './dexieSchema';
 
+export type NombreTabla = 'productos' | 'pedidos' | 'clientesFieles';
+
+export interface EstadoDB {
+  conectado: boolean;
+  cantidadRegistros: {
+    productos?: number;
+    pedidos?: number;
+    clientes?: number;
+  };
+}
+
+/**
+ * Obtiene la colección de Dexie correspondiente al nombre de tabla lógico.
+ */
+function obtenerColeccion(table: NombreTabla) {
+  if (table === 'productos') return dexieDB.productos;
+  if (table === 'pedidos') return dexieDB.pedidos;
+  if (table === 'clientesFieles') return dexieDB.clientesFieles;
+  return null;
+}
+
+/**
+ * Convierte cualquier registro en un objeto plano serializable.
+ */
+function aRegistroPlano(registro: unknown): Record<string, unknown> {
+  if (registro && typeof registro === 'object') {
+    return { ...(registro as Record<string, unknown>) };
+  }
+  return {};
+}
+
 export class DbAdapter {
   private platform: Platform;
 
@@ -19,23 +50,17 @@ export class DbAdapter {
   /**
    * Obtener todos los registros de una tabla
    */
-  async getAll(table: string, limit?: number): Promise<any[]> {
+  async getAll(table: NombreTabla, limit?: number): Promise<Record<string, unknown>[]> {
     try {
       if (this.platform === 'web') {
-        const collection = (dexieDB as any)[table];
-        if (!collection) throw new Error(`Tabla ${table} no existe`);
-        let query = collection.toArray();
-        if (limit) query = collection.limit(limit).toArray();
-        return await query;
-      } else if (this.platform === 'tauri') {
-        // TODO: Implementar con @tauri-apps/plugin-sql
-        console.warn('SQLite para Tauri aún no implementado completamente');
-        return [];
-      } else if (this.platform === 'capacitor') {
-        // TODO: Implementar con @capacitor-community/sqlite
-        console.warn('SQLite para Capacitor aún no implementado completamente');
-        return [];
+        const coleccion = obtenerColeccion(table);
+        if (!coleccion) throw new Error(`La tabla ${table} no existe`);
+        const registros = limit
+          ? await coleccion.limit(limit).toArray()
+          : await coleccion.toArray();
+        return registros.map(aRegistroPlano);
       }
+      // Tauri y Capacitor usarán SQLite en una próxima iteración
       return [];
     } catch (error) {
       console.error('Error al obtener datos:', error);
@@ -46,12 +71,13 @@ export class DbAdapter {
   /**
    * Obtener un registro por ID
    */
-  async getById(table: string, id: any): Promise<any | null> {
+  async getById(table: NombreTabla, id: number): Promise<Record<string, unknown> | null> {
     try {
       if (this.platform === 'web') {
-        const collection = (dexieDB as any)[table];
-        if (!collection) throw new Error(`Tabla ${table} no existe`);
-        return await collection.get(id) || null;
+        const coleccion = obtenerColeccion(table);
+        if (!coleccion) throw new Error(`La tabla ${table} no existe`);
+        const registro = await coleccion.get(id);
+        return registro ? aRegistroPlano(registro) : null;
       }
       return null;
     } catch (error) {
@@ -61,40 +87,44 @@ export class DbAdapter {
   }
 
   /**
-   * Agregar un registro
+   * Agregar un registro nuevo
    */
-  async add(table: string, data: any): Promise<any> {
+  async add(table: NombreTabla, datos: Record<string, unknown>): Promise<number | null> {
     try {
       if (this.platform === 'web') {
-        const collection = (dexieDB as any)[table];
-        if (!collection) throw new Error(`Tabla ${table} no existe`);
-        const id = await collection.add({
-          ...data,
-          fechaCreacion: data.fechaCreacion || new Date(),
+        const coleccion = obtenerColeccion(table);
+        if (!coleccion) throw new Error(`La tabla ${table} no existe`);
+        const entrada = {
+          ...datos,
+          fechaCreacion: datos.fechaCreacion ?? new Date(),
           fechaActualizacion: new Date(),
           sincronizado: false,
-        });
-        return { id, ...data };
+        };
+        return (await coleccion.add(entrada as never)) as number;
       }
       return null;
     } catch (error) {
       console.error('Error al agregar registro:', error);
-      throw error;
+      return null;
     }
   }
 
   /**
-   * Actualizar un registro
+   * Actualizar un registro existente
    */
-  async update(table: string, id: any, data: any): Promise<boolean> {
+  async update(
+    table: NombreTabla,
+    id: number,
+    datos: Record<string, unknown>
+  ): Promise<boolean> {
     try {
       if (this.platform === 'web') {
-        const collection = (dexieDB as any)[table];
-        if (!collection) throw new Error(`Tabla ${table} no existe`);
-        await collection.update(id, {
-          ...data,
+        const coleccion = obtenerColeccion(table);
+        if (!coleccion) throw new Error(`La tabla ${table} no existe`);
+        await coleccion.update(id, {
+          ...datos,
           fechaActualizacion: new Date(),
-        });
+        } as never);
         return true;
       }
       return false;
@@ -107,12 +137,12 @@ export class DbAdapter {
   /**
    * Eliminar un registro
    */
-  async delete(table: string, id: any): Promise<boolean> {
+  async delete(table: NombreTabla, id: number): Promise<boolean> {
     try {
       if (this.platform === 'web') {
-        const collection = (dexieDB as any)[table];
-        if (!collection) throw new Error(`Tabla ${table} no existe`);
-        await collection.delete(id);
+        const coleccion = obtenerColeccion(table);
+        if (!coleccion) throw new Error(`La tabla ${table} no existe`);
+        await coleccion.delete(id);
         return true;
       }
       return false;
@@ -123,20 +153,23 @@ export class DbAdapter {
   }
 
   /**
-   * Agregar múltiples registros
+   * Agregar múltiples registros de una sola vez
    */
-  async bulkAdd(table: string, items: any[]): Promise<number> {
+  async bulkAdd(
+    table: NombreTabla,
+    registros: Record<string, unknown>[]
+  ): Promise<number> {
     try {
       if (this.platform === 'web') {
-        const collection = (dexieDB as any)[table];
-        if (!collection) throw new Error(`Tabla ${table} no existe`);
-        const itemsWithDates = items.map(item => ({
-          ...item,
-          fechaCreacion: item.fechaCreacion || new Date(),
+        const coleccion = obtenerColeccion(table);
+        if (!coleccion) throw new Error(`La tabla ${table} no existe`);
+        const entradas = registros.map((registro) => ({
+          ...registro,
+          fechaCreacion: registro.fechaCreacion ?? new Date(),
           fechaActualizacion: new Date(),
           sincronizado: false,
         }));
-        return await collection.bulkAdd(itemsWithDates);
+        return await (coleccion.bulkAdd as (items: unknown[]) => Promise<number>)(entradas);
       }
       return 0;
     } catch (error) {
@@ -146,48 +179,56 @@ export class DbAdapter {
   }
 
   /**
-   * Obtener registros no sincronizados
+   * Obtener registros pendientes de sincronizar con Supabase
    */
-  async getPendientesSincronizar(table: string): Promise<any[]> {
+  async getPendientesSincronizar(table: NombreTabla): Promise<Record<string, unknown>[]> {
     try {
       if (this.platform === 'web') {
-        const collection = (dexieDB as any)[table];
-        if (!collection) throw new Error(`Tabla ${table} no existe`);
-        return await collection.where('sincronizado').equals(0).toArray();
+        const coleccion = obtenerColeccion(table);
+        if (!coleccion) throw new Error(`La tabla ${table} no existe`);
+        const registros = await coleccion.filter((registro) => {
+          const plano = aRegistroPlano(registro);
+          return plano.sincronizado === false || plano.sincronizado === 0;
+        }).toArray();
+        return registros.map(aRegistroPlano);
       }
       return [];
     } catch (error) {
-      console.error('Error al obtener pendientes:', error);
+      console.error('Error al obtener pendientes de sincronizar:', error);
       return [];
     }
   }
 
   /**
-   * Marcar registro como sincronizado
+   * Marcar un registro como sincronizado
    */
-  async marcarSincronizado(table: string, id: any, idSupabase?: string): Promise<boolean> {
+  async marcarSincronizado(
+    table: NombreTabla,
+    id: number,
+    idSupabase?: string
+  ): Promise<boolean> {
     try {
       if (this.platform === 'web') {
-        const collection = (dexieDB as any)[table];
-        if (!collection) throw new Error(`Tabla ${table} no existe`);
-        await collection.update(id, {
+        const coleccion = obtenerColeccion(table);
+        if (!coleccion) throw new Error(`La tabla ${table} no existe`);
+        await coleccion.update(id, {
           sincronizado: true,
-          idSupabase: idSupabase || undefined,
+          idSupabase,
           fechaActualizacion: new Date(),
-        });
+        } as never);
         return true;
       }
       return false;
     } catch (error) {
-      console.error('Error al marcar sincronizado:', error);
+      console.error('Error al marcar como sincronizado:', error);
       return false;
     }
   }
 
   /**
-   * Obtener el estado de la base de datos
+   * Obtener el estado de la base de datos local
    */
-  async getEstadoDB(): Promise<{ conectado: boolean; cantidadRegistros: any }> {
+  async getEstadoDB(): Promise<EstadoDB> {
     try {
       if (this.platform === 'web') {
         const productos = await dexieDB.productos.count();
@@ -200,7 +241,7 @@ export class DbAdapter {
       }
       return { conectado: false, cantidadRegistros: {} };
     } catch (error) {
-      console.error('Error al obtener estado DB:', error);
+      console.error('Error al obtener el estado de la base de datos:', error);
       return { conectado: false, cantidadRegistros: {} };
     }
   }

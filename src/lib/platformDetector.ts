@@ -5,18 +5,26 @@
 
 export type Platform = 'web' | 'tauri' | 'capacitor';
 
+interface WindowConHerramientas extends Window {
+  __TAURI__?: unknown;
+  Capacitor?: unknown;
+  cordova?: unknown;
+}
+
 export function getPlatform(): Platform {
   if (typeof window === 'undefined') {
     return 'web';
   }
 
+  const ventana = window as WindowConHerramientas;
+
   // Detección para Tauri 2.0
-  if ((window as any).__TAURI__ !== undefined) {
+  if (ventana.__TAURI__ !== undefined) {
     return 'tauri';
   }
 
   // Detección para Capacitor
-  if ((window as any).Capacitor !== undefined || (window as any).cordova !== undefined) {
+  if (ventana.Capacitor !== undefined || ventana.cordova !== undefined) {
     return 'capacitor';
   }
 

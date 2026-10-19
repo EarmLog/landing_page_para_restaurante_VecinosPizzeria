@@ -20,6 +20,14 @@ export interface Producto {
   fechaActualizacion: Date;
 }
 
+export interface ItemPedido {
+  codigo: string;
+  nombre: string;
+  cantidad: number;
+  precio: number;
+  personalizacion?: string;
+}
+
 export interface Pedido {
   id?: number;
   numeroPedido: string;
@@ -27,7 +35,7 @@ export interface Pedido {
   clienteTelefono?: string;
   clienteEmail?: string;
   tipoPedido: 'mesa' | 'domicilio' | 'recoger';
-  productos: any[];
+  productos: ItemPedido[];
   subtotal: number;
   descuento: number;
   total: number;
