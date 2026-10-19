@@ -1,0 +1,47 @@
+name: Compilar Tauri (.exe portable)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-tauri:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [windows-latest]
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependencias de Node
+        run: npm ci --legacy-peer-deps
+
+      - name: Instalar dependencias frontend
+        run: npm install
+
+      - name: Compilar Tauri
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Vecino\'s Pizzería v${{ github.ref_name }}'
+          releaseBody: 'Release de la aplicación de escritorio portable'
+          releaseDraft: false
+          prerelease: false
