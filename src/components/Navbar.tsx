@@ -53,6 +53,14 @@ export default function Navbar() {
             >
               Vecinos Club
             </Link>
+            <Link 
+              href="/dashboard/configuracion" 
+              className={`font-medium transition-colors hover:text-vecinos-naranja ${
+                pathname === '/dashboard/configuracion' ? 'text-vecinos-naranja' : 'text-vecinos-texto'
+              }`}
+            >
+              Estado
+            </Link>
           </div>
           <Link 
             href="/menu" 
