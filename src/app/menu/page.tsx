@@ -84,6 +84,8 @@ export default function MenuPage() {
                 nombre={producto.nombre}
                 descripcion={producto.descripcion ?? ''}
                 precio={producto.precio}
+                imagen_url={producto.imagen_url ?? undefined}
+                categoria={producto.categoria}
                 alPersonalizar={() => setPizzaSeleccionada(producto)}
               />
             ))}
