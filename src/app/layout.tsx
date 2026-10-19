@@ -4,7 +4,7 @@ import Navbar from '@/components/Navbar';
 import { DbProvider } from '@/context/DbContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { PlatformProvider } from '@/components/PlatformProvider';
-import { Toaster } from 'sonner';
+import NotificacionesToast from '@/components/ui/NotificacionesToast';
 
 export const metadata: Metadata = {
   title: "Vecino's Pizzería - Pide tu pizza a domicilio",
@@ -38,7 +38,7 @@ export default function RootLayout({
                 <Navbar />
                 <main className="flex-1 pb-20 md:pb-0">{children}</main>
               </div>
-              <Toaster position="top-center" richColors closeButton />
+              <NotificacionesToast />
             </DbProvider>
           </AuthProvider>
         </PlatformProvider>
